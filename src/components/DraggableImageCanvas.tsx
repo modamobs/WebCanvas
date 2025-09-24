@@ -545,8 +545,10 @@ export default function DraggableImageCanvas() {
         <div className="bg-black/20 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-light text-white mb-2 tracking-wide">WebCanvas</h1>
-              <p className="text-white/60 text-sm font-light">드래그, 줌, 복사가 가능한 인터랙티브 이미지 캔버스</p>
+              <h1 className="text-4xl font-display font-bold text-white mb-2 tracking-wider bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
+                WebCanvas
+              </h1>
+              <p className="text-white/70 text-sm font-sans font-medium tracking-wide">드래그, 줌, 복사가 가능한 인터랙티브 이미지 캔버스</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -587,7 +589,7 @@ export default function DraggableImageCanvas() {
               </button>
 
               <div className="bg-black/20 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
-                <span className="text-white/80 text-sm font-mono">{Math.round(zoomLevel * 100)}%</span>
+                <span className="text-white/80 text-sm font-mono font-medium">{Math.round(zoomLevel * 100)}%</span>
               </div>
 
               <div className="bg-black/20 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
@@ -762,7 +764,7 @@ export default function DraggableImageCanvas() {
               <div className="w-24 h-24 mx-auto mb-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
                 <Image className="w-12 h-12 text-white/40" />
               </div>
-              <h2 className="text-white text-3xl font-light mb-4 tracking-wide">시작해보세요</h2>
+              <h2 className="text-white text-3xl font-display font-semibold mb-4 tracking-wide">시작해보세요</h2>
               <p className="text-white/60 text-lg mb-8 leading-relaxed">
                 이미지를 드래그하거나 <span className="font-mono bg-white/10 px-3 py-1 rounded-lg border border-white/20">Ctrl+V</span>로 붙여넣어보세요
               </p>
