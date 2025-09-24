@@ -592,10 +592,7 @@ export default function DraggableImageCanvas() {
                 <span className="text-white/80 text-sm font-mono font-medium">{Math.round(zoomLevel * 100)}%</span>
               </div>
 
-              <div className="bg-black/20 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
-                <Clipboard className="w-4 h-4 text-white/60" />
-                <span className="text-white/80 text-sm font-mono">Ctrl+V</span>
-              </div>
+
             </div>
           </div>
 
