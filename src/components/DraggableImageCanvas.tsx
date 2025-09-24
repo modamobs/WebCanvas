@@ -32,6 +32,8 @@ export default function DraggableImageCanvas() {
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [zoomLevel, setZoomLevel] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
 
   const dragCounterRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +65,43 @@ export default function DraggableImageCanvas() {
     // 전역 paste 이벤트 리스너 등록
     document.addEventListener('paste', handlePaste);
 
+    // 전역 키보드 이벤트 리스너 (Ctrl+C 복사)
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      // Ctrl+C 또는 Cmd+C로 선택된 이미지 복사
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (selectedImages.size === 1) {
+          // 단일 이미지 선택 시
+          const selectedImageId = Array.from(selectedImages)[0];
+          const selectedImageData = images.find(img => img.id === selectedImageId);
+          if (selectedImageData) {
+            e.preventDefault();
+            await copyImageToClipboard(selectedImageData);
+          }
+        } else if (selectedImages.size > 1) {
+          // 다중 이미지 선택 시 모든 이미지를 순차적으로 복사
+          e.preventDefault();
+          const selectedImageIds = Array.from(selectedImages);
+          const selectedImagesData = images.filter(img => selectedImageIds.includes(img.id));
+
+          showToastMessage(`${selectedImages.size}개 이미지를 순차적으로 복사 중...`);
+
+          for (let i = 0; i < selectedImagesData.length; i++) {
+            const imageData = selectedImagesData[i];
+            await copyImageToClipboard(imageData);
+
+            // 마지막 이미지가 아니면 잠시 대기
+            if (i < selectedImagesData.length - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          }
+
+          showToastMessage(`${selectedImages.size}개 이미지가 모두 복사되었습니다. (마지막: ${selectedImagesData[selectedImagesData.length - 1].name})`);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
     // 전역 마우스 이벤트 리스너 (이미지 드래그용)
     const handleMouseMove = (e: MouseEvent) => {
       // 마우스 위치 추적
@@ -91,6 +130,17 @@ export default function DraggableImageCanvas() {
         ));
 
         setDragOffset({ x: e.clientX, y: e.clientY });
+      } else if (isPanning) {
+        // 팬(캔버스 이동) 처리
+        const deltaX = e.clientX - panStartPos.x;
+        const deltaY = e.clientY - panStartPos.y;
+
+        setPanOffset(prev => ({
+          x: prev.x + deltaX,
+          y: prev.y + deltaY
+        }));
+
+        setPanStartPos({ x: e.clientX, y: e.clientY });
       } else if (isSelecting) {
         // 줌과 팬 오프셋을 고려한 실제 좌표 계산
         const canvasElement = document.querySelector('.min-h-screen') as HTMLElement;
@@ -139,6 +189,7 @@ export default function DraggableImageCanvas() {
 
       setIsDraggingImage(false);
       setIsDraggingGroup(false);
+      setIsPanning(false);
       setSelectedImage(null);
     };
 
@@ -168,13 +219,14 @@ export default function DraggableImageCanvas() {
 
     return () => {
       document.removeEventListener('paste', handlePaste);
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('dragover', preventDefaultDrag);
       document.removeEventListener('drop', preventDefaultDrag);
       document.removeEventListener('wheel', handleWheel);
     };
-  }, [isDraggingImage, isDraggingGroup, isSelecting, selectedImage, selectedImages, dragOffset, selectionBox, images, lastMousePos, zoomLevel]);
+  }, [isDraggingImage, isDraggingGroup, isSelecting, selectedImage, selectedImages, dragOffset, selectionBox, images, lastMousePos, zoomLevel, isPanning, panStartPos, panOffset]);
 
   const showToastMessage = (message: string) => {
     setShowToast(message);
@@ -215,7 +267,7 @@ export default function DraggableImageCanvas() {
           y = Math.max(100, Math.min(y, window.innerHeight - height - 50)); // 상단 패널 고려
         } else {
           x = Math.random() * (window.innerWidth - width - 100) + 50;
-          y = Math.random() * (window.innerHeight - height - 200) + 150;
+          y = Math.random() * (window.innerHeight - height - 300) + 200; // 헤더 아래쪽부터 시작
         }
 
         const newImage: ImageItem = {
@@ -306,10 +358,6 @@ export default function DraggableImageCanvas() {
     e.preventDefault();
     e.stopPropagation();
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
     // Ctrl 키를 누르고 있으면 다중 선택
     if (e.ctrlKey || e.metaKey) {
       const newSelected = new Set(selectedImages);
@@ -354,24 +402,35 @@ export default function DraggableImageCanvas() {
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
     // 이미지가 아닌 빈 공간을 클릭한 경우
     if (e.target === e.currentTarget) {
-      setSelectedImages(new Set());
-      setIsSelecting(true);
+      // 중간 버튼(휠 버튼) 클릭 시 팬 모드 시작
+      if (e.button === 1) {
+        e.preventDefault();
+        setIsPanning(true);
+        setPanStartPos({ x: e.clientX, y: e.clientY });
+        return;
+      }
 
-      // 줌과 팬 오프셋을 고려한 실제 좌표 계산
-      const rect = e.currentTarget.getBoundingClientRect();
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
+      // 좌클릭 시 선택 모드
+      if (e.button === 0) {
+        setSelectedImages(new Set());
+        setIsSelecting(true);
 
-      // 마우스 위치를 줌 컨테이너 좌표계로 변환
-      const x = (e.clientX - rect.left - centerX) / zoomLevel + centerX - panOffset.x;
-      const y = (e.clientY - rect.top - centerY) / zoomLevel + centerY - panOffset.y;
+        // 줌과 팬 오프셋을 고려한 실제 좌표 계산
+        const rect = e.currentTarget.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
 
-      setSelectionBox({
-        startX: x,
-        startY: y,
-        endX: x,
-        endY: y
-      });
+        // 마우스 위치를 줌 컨테이너 좌표계로 변환
+        const x = (e.clientX - rect.left - centerX) / zoomLevel + centerX - panOffset.x;
+        const y = (e.clientY - rect.top - centerY) / zoomLevel + centerY - panOffset.y;
+
+        setSelectionBox({
+          startX: x,
+          startY: y,
+          endX: x,
+          endY: y
+        });
+      }
     }
   };
 
@@ -383,7 +442,7 @@ export default function DraggableImageCanvas() {
     setImages(prev => prev.map((img, index) => ({
       ...img,
       x: 50 + (index % 4) * 220,
-      y: 50 + Math.floor(index / 4) * 220
+      y: 200 + Math.floor(index / 4) * 220  // 헤더 아래쪽부터 시작 (200px)
     })));
     setSelectedImages(new Set());
     showToastMessage('이미지 위치가 초기화되었습니다!');
@@ -392,8 +451,9 @@ export default function DraggableImageCanvas() {
   const resetZoom = () => {
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
-    showToastMessage('줌이 초기화되었습니다!');
+    showToastMessage('뷰가 초기화되었습니다!');
   };
+
 
   const deleteSelectedImages = () => {
     setImages(prev => prev.filter(img => !selectedImages.has(img.id)));
@@ -481,66 +541,79 @@ export default function DraggableImageCanvas() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* 상단 컨트롤 패널 */}
-      <div className="absolute top-4 left-4 right-4 z-50">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20">
-          <div className="flex items-center justify-between mb-4">
+      <div className="absolute top-6 left-6 right-6 z-50">
+        <div className="bg-black/20 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-white mb-1">드래그 가능한 이미지 캔버스</h1>
-              <p className="text-white/70">Ctrl+V로 이미지를 추가하고, 드래그해서 자유롭게 배치해보세요!</p>
+              <h1 className="text-3xl font-light text-white mb-2 tracking-wide">WebCanvas</h1>
+              <p className="text-white/60 text-sm font-light">드래그, 줌, 복사가 가능한 인터랙티브 이미지 캔버스</p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm"
               >
                 <Upload className="w-4 h-4" />
-                파일 선택
+                <span className="font-medium">업로드</span>
               </button>
 
               <button
                 onClick={resetImagePositions}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={images.length === 0}
               >
                 <RotateCcw className="w-4 h-4" />
-                위치 초기화
+                <span className="font-medium">정렬</span>
               </button>
 
               {selectedImages.size > 0 && (
                 <button
                   onClick={deleteSelectedImages}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-200 px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-red-500/30 hover:border-red-500/50 backdrop-blur-sm"
                 >
                   <X className="w-4 h-4" />
-                  선택 삭제 ({selectedImages.size})
+                  <span className="font-medium">삭제 ({selectedImages.size})</span>
                 </button>
               )}
 
               <button
                 onClick={resetZoom}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                disabled={zoomLevel === 1}
+                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0}
               >
-                🔍 줌 리셋
+                <span className="text-sm">🔍</span>
+                <span className="font-medium">리셋</span>
               </button>
 
-              <div className="bg-white/20 px-4 py-2 rounded-lg flex items-center gap-2">
-                <span className="text-white text-sm">줌: {Math.round(zoomLevel * 100)}%</span>
+              <div className="bg-black/20 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
+                <span className="text-white/80 text-sm font-mono">{Math.round(zoomLevel * 100)}%</span>
               </div>
 
-              <div className="bg-white/20 px-4 py-2 rounded-lg flex items-center gap-2">
-                <Clipboard className="w-4 h-4 text-white" />
-                <span className="text-white text-sm">Ctrl+V</span>
+              <div className="bg-black/20 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
+                <Clipboard className="w-4 h-4 text-white/60" />
+                <span className="text-white/80 text-sm font-mono">Ctrl+V</span>
               </div>
             </div>
           </div>
 
           {images.length > 0 && (
-            <div className="text-white/70 text-sm">
-              이미지 {images.length}개
-              {selectedImages.size > 0 && ` • ${selectedImages.size}개 선택됨`}
-              • 빈 공간을 드래그해서 다중 선택 • Ctrl+클릭으로 개별 선택 • 마우스 휠로 줌
+            <div className="flex items-center justify-between text-white/50 text-xs">
+              <div className="flex items-center gap-4">
+                <span className="font-medium">이미지 {images.length}개</span>
+                {selectedImages.size > 0 && (
+                  <span className="text-blue-300 font-medium">{selectedImages.size}개 선택됨</span>
+                )}
+              </div>
+              <div className="hidden md:flex items-center gap-3 text-xs">
+                <span>드래그 선택</span>
+                <span>•</span>
+                <span>Ctrl+클릭</span>
+                <span>•</span>
+                <span>Ctrl+C 복사</span>
+                <span>•</span>
+                <span>휠 줌</span>
+              </div>
             </div>
           )}
         </div>
@@ -593,17 +666,22 @@ export default function DraggableImageCanvas() {
           {images.map((image) => (
             <div
               key={image.id}
-              style={{
-                position: 'absolute',
-                left: image.x,
-                top: image.y,
-                zIndex: image.zIndex,
-                width: image.width,
-                height: image.height,
-                pointerEvents: dragActive ? 'none' : 'auto'
-              }}
-              className={`bg-white rounded-xl shadow-2xl overflow-hidden cursor-move select-none group transition-transform hover:scale-105 pointer-events-auto ${selectedImages.has(image.id) ? 'ring-2 ring-blue-400' : ''
+              className={`bg-white overflow-hidden cursor-move select-none group hover:scale-[1.02] pointer-events-auto ${selectedImages.has(image.id)
+                ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-transparent shadow-2xl shadow-blue-500/20'
+                : 'shadow-xl hover:shadow-2xl'
                 }`}
+              style={{
+                ...{
+                  position: 'absolute',
+                  left: image.x,
+                  top: image.y,
+                  zIndex: image.zIndex,
+                  width: image.width,
+                  height: image.height,
+                  pointerEvents: dragActive ? 'none' : 'auto'
+                },
+                transition: isDraggingImage && selectedImage === image.id ? 'none' : 'transform 0.2s ease-out'
+              }}
               onMouseDown={(e) => handleImageMouseDown(e, image.id)}
             >
               {/* 이미지 */}
@@ -621,44 +699,39 @@ export default function DraggableImageCanvas() {
                   {selectedImages.has(image.id) && selectedImages.size > 1 ? '그룹 드래그' : '드래그'}
                 </div>
 
-                {/* 선택 표시 */}
-                {selectedImages.has(image.id) && (
-                  <div className="absolute top-2 right-20 bg-blue-500 text-white p-1 rounded text-xs flex items-center gap-1">
-                    ✓ 선택됨
-                  </div>
-                )}
+
 
                 {/* 액션 버튼들 */}
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       copyImageToClipboard(image);
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white p-1 rounded-full shadow-lg transition-colors"
+                    className="bg-black/60 hover:bg-black/80 text-white p-2 rounded-lg shadow-lg transition-all duration-200 backdrop-blur-sm border border-white/10"
                     title="복사"
                   >
-                    <Copy className="w-3 h-3" />
+                    <Copy className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       downloadImage(image);
                     }}
-                    className="bg-green-500 hover:bg-green-600 text-white p-1 rounded-full shadow-lg transition-colors"
+                    className="bg-black/60 hover:bg-black/80 text-white p-2 rounded-lg shadow-lg transition-all duration-200 backdrop-blur-sm border border-white/10"
                     title="저장"
                   >
-                    <Download className="w-3 h-3" />
+                    <Download className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       removeImage(image.id);
                     }}
-                    className="bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-lg transition-colors"
+                    className="bg-red-500/80 hover:bg-red-500 text-white p-2 rounded-lg shadow-lg transition-all duration-200 backdrop-blur-sm border border-red-400/20"
                     title="삭제"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -685,17 +758,31 @@ export default function DraggableImageCanvas() {
         {/* 빈 상태 */}
         {images.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <Image className="w-20 h-20 text-white/30 mx-auto mb-6" />
-              <h2 className="text-white text-2xl font-bold mb-3">이미지를 추가해보세요</h2>
-              <p className="text-white/70 text-lg mb-6">
-                스크린샷을 찍고 <span className="font-mono bg-white/20 px-3 py-1 rounded">Ctrl+V</span>를 눌러보세요!
+            <div className="text-center max-w-md">
+              <div className="w-24 h-24 mx-auto mb-8 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
+                <Image className="w-12 h-12 text-white/40" />
+              </div>
+              <h2 className="text-white text-3xl font-light mb-4 tracking-wide">시작해보세요</h2>
+              <p className="text-white/60 text-lg mb-8 leading-relaxed">
+                이미지를 드래그하거나 <span className="font-mono bg-white/10 px-3 py-1 rounded-lg border border-white/20">Ctrl+V</span>로 붙여넣어보세요
               </p>
-              <div className="flex items-center justify-center gap-4 text-white/50 text-sm">
-                <span>• 드래그 앤 드롭</span>
-                <span>• 클립보드 붙여넣기</span>
-                <span>• 자유로운 배치</span>
-                <span>• 마우스 휠 줌</span>
+              <div className="grid grid-cols-2 gap-3 text-white/40 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-white/20 rounded-full"></div>
+                  <span>드래그 앤 드롭</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-white/20 rounded-full"></div>
+                  <span>클립보드 붙여넣기</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-white/20 rounded-full"></div>
+                  <span>자유로운 배치</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-white/20 rounded-full"></div>
+                  <span>줌 & 팬</span>
+                </div>
               </div>
             </div>
           </div>

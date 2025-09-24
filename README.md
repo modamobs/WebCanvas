@@ -1,125 +1,74 @@
-# Draggable Image Canvas
+# 드래그 가능한 이미지 캔버스
 
-A React component that provides an interactive canvas for managing and manipulating images with drag-and-drop functionality, clipboard support, and modern UI.
+React와 TypeScript로 만든 인터랙티브 이미지 캔버스 애플리케이션입니다.
 
-## Features
+## 🚀 주요 기능
 
-- 🖼️ **Multiple Image Upload Methods**
-  - File selection dialog
-  - Drag and drop from file explorer
-  - Clipboard paste (Ctrl+V) - perfect for screenshots!
+- **이미지 추가**: 드래그 앤 드롭, 파일 선택, 클립보드 붙여넣기 (Ctrl+V)
+- **자유로운 배치**: 이미지를 드래그해서 원하는 위치에 배치
+- **다중 선택**: 빈 공간 드래그 또는 Ctrl+클릭으로 여러 이미지 선택
+- **그룹 이동**: 선택된 이미지들을 함께 드래그
+- **줌 기능**: 마우스 휠로 캔버스 확대/축소 (10% ~ 300%)
+- **팬 기능**: 휠 버튼으로 캔버스 이동
+- **이미지 복사**: 복사 버튼 또는 Ctrl+C로 클립보드에 복사
+- **이미지 저장**: 개별 이미지 다운로드
+- **원본 비율 유지**: 이미지 추가 시 자동으로 비율 조정
 
-- 🎯 **Interactive Image Management**
-  - Drag images around the canvas freely
-  - Visual feedback with hover effects and selection indicators
-  - Automatic z-index management (selected images come to front)
+## 🎮 사용법
 
-- 📋 **Clipboard Integration**
-  - Copy images to clipboard for use in other applications
-  - Paste images directly from clipboard (great for screenshots)
+### 이미지 추가
+- 파일을 드래그해서 캔버스에 드롭
+- "파일 선택" 버튼 클릭
+- 스크린샷 후 Ctrl+V로 붙여넣기
 
-- 💾 **Image Operations**
-  - Download individual images
-  - Remove images with delete button
-  - Reset all image positions to grid layout
+### 이미지 조작
+- **이동**: 이미지를 클릭하고 드래그
+- **선택**: Ctrl+클릭으로 개별 선택, 빈 공간 드래그로 다중 선택
+- **복사**: 선택 후 Ctrl+C 또는 복사 버튼
+- **삭제**: 이미지 호버 시 나타나는 X 버튼
 
-- 🎨 **Modern UI**
-  - Beautiful gradient background
-  - Glassmorphism design elements
-  - Smooth animations and transitions
-  - Responsive design
+### 캔버스 조작
+- **줌**: 마우스 휠 위/아래
+- **팬**: 휠 버튼(중간 버튼) + 드래그
+- **리셋**: "뷰 리셋" 버튼으로 줌과 팬 초기화
 
-## Getting Started
+## 🛠️ 기술 스택
 
-### Prerequisites
+- **React 18** - UI 라이브러리
+- **TypeScript** - 타입 안전성
+- **Vite** - 빌드 도구
+- **Tailwind CSS** - 스타일링
+- **Lucide React** - 아이콘
 
-- Node.js (version 16 or higher)
-- npm or yarn
-
-### Installation
-
-1. Clone or download this project
-2. Install dependencies:
+## 🚀 로컬 실행
 
 ```bash
+# 의존성 설치
 npm install
-```
 
-3. Start the development server:
-
-```bash
+# 개발 서버 실행
 npm run dev
+
+# 빌드
+npm run build
+
+# 미리보기
+npm run preview
 ```
 
-4. Open your browser and navigate to `http://localhost:5173`
+## 📦 배포
 
-### Building for Production
+GitHub Pages에 자동 배포됩니다.
 
 ```bash
-npm run build
+# 수동 배포
+npm run deploy
 ```
 
-The built files will be in the `dist` directory.
+## 🎯 데모
 
-## Usage
+[라이브 데모 보기](https://modamobs.github.io/WebCanvas/)
 
-### Adding Images
+## 📝 라이선스
 
-1. **File Selection**: Click the "파일 선택" (File Select) button to choose images from your computer
-2. **Drag & Drop**: Drag image files directly from your file explorer onto the canvas
-3. **Clipboard Paste**: Take a screenshot or copy an image, then press `Ctrl+V` to paste it directly onto the canvas
-
-### Managing Images
-
-- **Move Images**: Click and drag any image to reposition it on the canvas
-- **Delete Images**: Hover over an image and click the red X button in the top-right corner
-- **Copy to Clipboard**: Click the "복사" (Copy) button to copy the image to your clipboard
-- **Download**: Click the "저장" (Save) button to download the image to your computer
-- **Reset Positions**: Click "위치 초기화" (Reset Positions) to arrange all images in a grid layout
-
-### Keyboard Shortcuts
-
-- `Ctrl+V`: Paste image from clipboard
-
-## Technical Details
-
-### Built With
-
-- **React 18** - UI framework
-- **TypeScript** - Type safety
-- **Vite** - Build tool and dev server
-- **Tailwind CSS** - Styling
-- **Lucide React** - Icons
-
-### Key Features Implementation
-
-- **Drag and Drop**: Custom mouse event handling with offset calculation
-- **Clipboard API**: Modern clipboard integration for image copying and pasting
-- **File API**: File reading and processing for uploads
-- **Canvas API**: Image manipulation and blob creation for clipboard operations
-
-### Browser Compatibility
-
-- Modern browsers with ES2020 support
-- Clipboard API support required for clipboard features
-- File API support required for file uploads
-
-## Project Structure
-
-```
-src/
-├── components/
-│   └── DraggableImageCanvas.tsx  # Main component
-├── App.tsx                       # App wrapper
-├── App.css                       # Custom animations
-├── main.tsx                      # Entry point
-└── index.css                     # Global styles
-```
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
-
-## License
-
-MIT License - feel free to use this project for personal or commercial purposes.
+MIT License
