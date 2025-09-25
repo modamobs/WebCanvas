@@ -541,54 +541,54 @@ export default function DraggableImageCanvas() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* 상단 컨트롤 패널 */}
-      <div className="absolute top-6 left-6 right-6 z-50">
-        <div className="bg-black/20 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-2xl">
-          <div className="flex items-center justify-between mb-6">
+      <div className="absolute top-4 left-4 right-4 z-50">
+        <div className="bg-black/20 backdrop-blur-xl rounded-xl p-4 border border-white/10 shadow-2xl">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-display font-bold text-white mb-2 tracking-wider bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-display font-bold text-white mb-1 tracking-wider bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent">
                 WebCanvas
               </h1>
-              <p className="text-white/70 text-sm font-sans font-medium tracking-wide">드래그, 줌, 복사가 가능한 인터랙티브 이미지 캔버스</p>
+              <p className="text-white/60 text-xs font-sans font-medium tracking-wide">드래그, 줌, 복사가 가능한 인터랙티브 이미지 캔버스</p>
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm"
+                className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm"
               >
                 <Upload className="w-4 h-4" />
-                <span className="font-medium">업로드</span>
+                <span className="font-medium text-sm">업로드</span>
               </button>
 
               <button
                 onClick={resetImagePositions}
-                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={images.length === 0}
               >
                 <RotateCcw className="w-4 h-4" />
-                <span className="font-medium">정렬</span>
+                <span className="font-medium text-sm">정렬</span>
               </button>
 
               {selectedImages.size > 0 && (
                 <button
                   onClick={deleteSelectedImages}
-                  className="bg-red-500/20 hover:bg-red-500/30 text-red-200 px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-red-500/30 hover:border-red-500/50 backdrop-blur-sm"
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-200 px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-red-500/30 hover:border-red-500/50 backdrop-blur-sm"
                 >
                   <X className="w-4 h-4" />
-                  <span className="font-medium">삭제 ({selectedImages.size})</span>
+                  <span className="font-medium text-sm">삭제 ({selectedImages.size})</span>
                 </button>
               )}
 
               <button
                 onClick={resetZoom}
-                className="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 border border-white/20 hover:border-white/30 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={zoomLevel === 1 && panOffset.x === 0 && panOffset.y === 0}
               >
                 <span className="text-sm">🔍</span>
-                <span className="font-medium">리셋</span>
+                <span className="font-medium text-sm">리셋</span>
               </button>
 
-              <div className="bg-black/20 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
+              <div className="bg-black/20 px-3 py-2 rounded-lg flex items-center gap-2 border border-white/10">
                 <span className="text-white/80 text-sm font-mono font-medium">{Math.round(zoomLevel * 100)}%</span>
               </div>
 
@@ -596,25 +596,7 @@ export default function DraggableImageCanvas() {
             </div>
           </div>
 
-          {images.length > 0 && (
-            <div className="flex items-center justify-between text-white/50 text-xs">
-              <div className="flex items-center gap-4">
-                <span className="font-medium">이미지 {images.length}개</span>
-                {selectedImages.size > 0 && (
-                  <span className="text-blue-300 font-medium">{selectedImages.size}개 선택됨</span>
-                )}
-              </div>
-              <div className="hidden md:flex items-center gap-3 text-xs">
-                <span>드래그 선택</span>
-                <span>•</span>
-                <span>Ctrl+클릭</span>
-                <span>•</span>
-                <span>Ctrl+C 복사</span>
-                <span>•</span>
-                <span>휠 줌</span>
-              </div>
-            </div>
-          )}
+
         </div>
       </div>
 
