@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Upload, Image, Clipboard, X, Download, Copy, Move, RotateCcw } from 'lucide-react';
+import { Upload, Image, X, Download, Copy, Move, RotateCcw } from 'lucide-react';
 
 interface ImageItem {
   id: number;
